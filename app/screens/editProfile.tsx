@@ -6,14 +6,23 @@ import {
   SafeAreaView,
   View,
   ScrollView,
+  Alert,
+  Modal,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import React, { useState, useEffect } from "react";
 import { router } from "expo-router";
-import { getAuth } from "firebase/auth";
-import { get, ref, update } from "firebase/database";
+import {
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  getAuth,
+  deleteUser,
+} from "firebase/auth";
+import { get, ref, update, getDatabase, remove } from "firebase/database";
 import { database } from "@/FirebaseConfig";
+import { useRouter } from "expo-router";
 import AntDesign from "@expo/vector-icons/AntDesign";
+import { Ionicons } from "@expo/vector-icons";
 
 const EditProfile = () => {
   const [name, setName] = useState("");
@@ -21,14 +30,20 @@ const EditProfile = () => {
   const [mob, setMob] = useState<number | null>(null);
   const [yob, setYob] = useState<number | null>(null);
   const [gender, setGender] = useState<number | null>(null);
+  const [interestedIn, setInterestedIn] = useState<number | null>(null);
   const [height, setHeight] = useState<number | null>(null);
   const [weight, setWeight] = useState<number | null>(null);
   const [religion, setReligion] = useState<number | null>(null);
   const [caste, setCaste] = useState("");
   const [maritalStatus, setMaritalStatus] = useState<boolean | null>(null);
   const [languages, setLanguages] = useState<string[]>([]);
+
+  const [password, setPassword] = useState("");
+  const [modalVisible, setModalVisible] = useState(false);
   const auth = getAuth();
   const user = auth.currentUser;
+  const database = getDatabase();
+  const router = useRouter();
 
   const [language, setLanguage] = useState("");
   const addLanguage = () => {
@@ -58,9 +73,9 @@ const EditProfile = () => {
     { number: 11, name: "November" },
     { number: 12, name: "December" },
   ];
-  
+
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 100 }, (_, i) => currentYear - 99 + i);
+  const years = Array.from({ length: 70 }, (_, i) => currentYear - 70 + i);
 
   const religionArray = [
     { number: 1, name: "Hinduism" },
@@ -88,6 +103,7 @@ const EditProfile = () => {
       await update(profileRef, {
         name,
         gender,
+        interestedIn,
         dateOfBirth: dob,
         monthOfBirth: mob,
         yearOfBirth: yob,
@@ -117,7 +133,8 @@ const EditProfile = () => {
       const profileData = snapshot.val();
 
       setName(profileData.name || "");
-      setGender(profileData.gender);
+      setGender(profileData.gender || null);
+      setInterestedIn(profileData.interestedIn || null);
       setDob(profileData.dateOfBirth || null);
       setMob(profileData.monthOfBirth || null);
       setYob(profileData.yearOfBirth || null);
@@ -126,31 +143,31 @@ const EditProfile = () => {
       setReligion(profileData.religion || null);
       setCaste(profileData.caste || "");
       setLanguages(profileData.languages || "");
-      setMaritalStatus(profileData.maritalStatus || null);
+      setMaritalStatus(
+        profileData.maritalStatus === true ? true : profileData.maritalStatus === false ? false : null
+      );
     } else {
       console.log("No user logged in");
     }
   };
 
-
-
   return (
     <SafeAreaView className="bg-dark-200 flex-1">
       <ScrollView
-        className="flex flex-column w-full px-6 py-8"
+        className="flex flex-column w-full px-6 py-2"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ minHeight: "100%" }}
       >
-        <View className="flex flex-row items-center justify-between">
-          <Text className="color-white text-3xl font-semibold">
-            Edit Profile
-          </Text>
+        <View className="mx-2 mt-4 flex flex-row items-center gap-2">
           <TouchableOpacity
-            className="px-2 py-3 rounded-lg shadow-lg"
+            className="py-2 rounded-xl shadow-lg"
             onPress={() => router.push("/profile")}
           >
-            <AntDesign name="closecircle" size={24} color="red" />
+            <Ionicons name="chevron-back" size={24} color="white" />
           </TouchableOpacity>
+          <Text className=" color-white text-3xl font-semibold">
+            Edit Profile
+          </Text>
         </View>
         <View className="flex flex-row items-center border-y-2 my-2">
           <Text className="color-white text-lg font-semibold py-2">Name: </Text>
@@ -169,30 +186,14 @@ const EditProfile = () => {
           <View className="flex flex-row space-x-4">
             <TouchableOpacity
               className={`px-4 py-2 rounded-lg ${
-                gender === 0 ? "bg-indigo-500" : "bg-dark-300"
-              }`}
-              onPress={() => setGender(0)}
-            >
-              <Text
-                className={`${
-                  gender === 0 ? "text-white" : "text-gray-300"
-                }`}
-              >
-                Male
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className={`px-4 py-2 rounded-lg ${
                 gender === 1 ? "bg-indigo-500" : "bg-dark-300"
               }`}
               onPress={() => setGender(1)}
             >
               <Text
-                className={`${
-                  gender === 1 ? "text-white" : "text-gray-300"
-                }`}
+                className={`${gender === 1 ? "text-white" : "text-gray-300"}`}
               >
-                Female
+                Male
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -202,11 +203,84 @@ const EditProfile = () => {
               onPress={() => setGender(2)}
             >
               <Text
+                className={`${gender === 2 ? "text-white" : "text-gray-300"}`}
+              >
+                Female
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className={`px-4 py-2 rounded-lg ${
+                gender === 3 ? "bg-indigo-500" : "bg-dark-300"
+              }`}
+              onPress={() => setGender(3)}
+            >
+              <Text
+                className={`${gender === 3 ? "text-white" : "text-gray-300"}`}
+              >
+                Other
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        <View className="flex flex-row items-center border-b-2 pb-2">
+          <Text className="color-white text-lg font-semibold py-2">
+            Interested in:{" "}
+          </Text>
+          <View className="flex flex-row space-x-4">
+            <TouchableOpacity
+              className={`px-4 py-2 rounded-lg ${
+                interestedIn === 1 ? "bg-indigo-500" : "bg-dark-300"
+              }`}
+              onPress={() => setInterestedIn(1)}
+            >
+              <Text
                 className={`${
-                  gender === 2 ? "text-white" : "text-gray-300"
+                  interestedIn === 1 ? "text-white" : "text-gray-300"
+                }`}
+              >
+                Male
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className={`px-4 py-2 rounded-lg ${
+                interestedIn === 2 ? "bg-indigo-500" : "bg-dark-300"
+              }`}
+              onPress={() => setInterestedIn(2)}
+            >
+              <Text
+                className={`${
+                  interestedIn === 2 ? "text-white" : "text-gray-300"
+                }`}
+              >
+                Female
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className={`px-4 py-2 rounded-lg ${
+                interestedIn === 3 ? "bg-indigo-500" : "bg-dark-300"
+              }`}
+              onPress={() => setInterestedIn(3)}
+            >
+              <Text
+                className={`${
+                  interestedIn === 3 ? "text-white" : "text-gray-300"
                 }`}
               >
                 Other
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              className={`px-4 py-2 rounded-lg ${
+                interestedIn === 4 ? "bg-indigo-500" : "bg-dark-300"
+              }`}
+              onPress={() => setInterestedIn(4)}
+            >
+              <Text
+                className={`${
+                  interestedIn === 4 ? "text-white" : "text-gray-300"
+                }`}
+              >
+                Any
               </Text>
             </TouchableOpacity>
           </View>
@@ -223,7 +297,11 @@ const EditProfile = () => {
             >
               <Picker.Item label="Select Date" value="" />
               {dates.map((date) => (
-                <Picker.Item key={date} label={String(date)} value={date.toString()} />
+                <Picker.Item
+                  key={date}
+                  label={String(date)}
+                  value={date.toString()}
+                />
               ))}
             </Picker>
             <Picker
@@ -254,7 +332,11 @@ const EditProfile = () => {
             >
               <Picker.Item label="Select Year" value="" />
               {years.map((year) => (
-                <Picker.Item key={year} label={String(year)} value={year.toString()} />
+                <Picker.Item
+                  key={year}
+                  label={String(year)}
+                  value={year.toString()}
+                />
               ))}
             </Picker>
           </View>
@@ -269,7 +351,9 @@ const EditProfile = () => {
             placeholderTextColor="gray"
             keyboardType="numeric"
             value={height !== null ? height.toString() : ""}
-            onChangeText={(text) => setHeight(text.trim() === "" ? null : parseFloat(text))}
+            onChangeText={(text) =>
+              setHeight(text.trim() === "" ? null : parseFloat(text))
+            }
           />
           <Text className="color-white text-lg font-semibold py-2"> cm</Text>
         </View>
@@ -279,11 +363,13 @@ const EditProfile = () => {
           </Text>
           <TextInput
             className="color-white bg-dark-300 border-2 border-indigo-100 rounded-lg px-6 py-3 my-2 min-w-24"
-            placeholder="Height"
+            placeholder="Weight"
             placeholderTextColor="gray"
             keyboardType="numeric"
             value={weight !== null ? weight.toString() : ""}
-            onChangeText={(text) => setWeight(text.trim() === "" ? null : parseFloat(text))}
+            onChangeText={(text) =>
+              setWeight(text.trim() === "" ? null : parseFloat(text))
+            }
           />
           <Text className="color-white text-lg font-semibold py-2"> kg</Text>
         </View>
@@ -375,13 +461,17 @@ const EditProfile = () => {
           <View className="flex flex-row space-x-4">
             <TouchableOpacity
               className={`px-4 py-2 rounded-lg ${
-                maritalStatus ? "bg-indigo-500" : "bg-dark-300"
+                maritalStatus && maritalStatus != null
+                  ? "bg-indigo-500"
+                  : "bg-dark-300"
               }`}
               onPress={() => setMaritalStatus(true)}
             >
               <Text
                 className={`${
-                  maritalStatus ? "text-white" : "text-gray-300"
+                  maritalStatus && maritalStatus != null
+                    ? "text-white"
+                    : "text-gray-300"
                 }`}
               >
                 Married
@@ -389,13 +479,17 @@ const EditProfile = () => {
             </TouchableOpacity>
             <TouchableOpacity
               className={`px-4 py-2 rounded-lg ${
-                !maritalStatus ? "bg-indigo-500" : "bg-dark-300"
+                !maritalStatus && maritalStatus === false
+                  ? "bg-indigo-500"
+                  : "bg-dark-300"
               }`}
               onPress={() => setMaritalStatus(false)}
             >
               <Text
                 className={`${
-                  !maritalStatus ? "text-white" : "text-gray-300"
+                  !maritalStatus && maritalStatus === false
+                    ? "text-white"
+                    : "text-gray-300"
                 }`}
               >
                 Unmarried

@@ -5,10 +5,11 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
+  Alert,
 } from "react-native";
-import { useState } from "react";
+import React, { useState } from "react";
 import { router } from "expo-router";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { set, ref } from "firebase/database";
 import { auth, db, database } from "@/FirebaseConfig";
@@ -29,7 +30,8 @@ const Login = () => {
 
         const userCredential = user.user;
 
-        // Create user to Realtime Database under "users" node
+        await sendEmailVerification(userCredential);
+
         const userRef = ref(database, `users/${userCredential.uid}`);
         await set(userRef, {
           email: userCredential.email,
@@ -37,7 +39,9 @@ const Login = () => {
           createdAt: new Date(),
         });
 
-        if (user) router.replace("/(tabs)");
+        Alert.alert("Verify you Email", "Verification email sent. Please check your inbox.");
+
+        if (user) router.replace("/screens/verifyEmail");
       } catch (error: any) {
         console.log(error);
         alert("Registration failed" + error.message);

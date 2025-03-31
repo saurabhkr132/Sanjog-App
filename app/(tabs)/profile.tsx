@@ -11,7 +11,8 @@ import { getAuth } from "firebase/auth";
 import { router } from "expo-router";
 import { get, ref } from "firebase/database";
 import { database } from "@/FirebaseConfig";
-import AntDesign from "@expo/vector-icons/AntDesign";
+import { Ionicons } from "@expo/vector-icons";
+import ProfilePhotoScreen from "@/app/screens/ProfilePhotoScreen";
 
 export default function Profile() {
   const [name, setName] = useState("");
@@ -19,18 +20,20 @@ export default function Profile() {
   const [mob, setMob] = useState<number | null>(null);
   const [yob, setYob] = useState<number | null>(null);
   const [gender, setGender] = useState<number | null>(null);
+  const [interestedIn, setInterestedIn] = useState<number | null>(null);
   const [height, setHeight] = useState<number | null>(null);
   const [weight, setWeight] = useState<number | null>(null);
   const [religion, setReligion] = useState<number | null>(null);
   const [caste, setCaste] = useState("");
   const [maritalStatus, setMaritalStatus] = useState<boolean | null>(null);
   const [languages, setLanguages] = useState<string[]>([]);
+  const [imageUri, setImageUri] = useState<string | null>("");
   const auth = getAuth();
   const user = auth.currentUser;
 
   useEffect(() => {
     fetchProfileDetails();
-  }, [user]);
+  });
 
   const fetchProfileDetails = async () => {
     if (user) {
@@ -41,6 +44,7 @@ export default function Profile() {
 
       setName(profileData.name || "");
       setGender(profileData.gender ?? null);
+      setInterestedIn(profileData.interestedIn ?? null);
       setDob(profileData.dateOfBirth || null);
       setMob(profileData.monthOfBirth || null);
       setYob(profileData.yearOfBirth || null);
@@ -50,49 +54,129 @@ export default function Profile() {
       setCaste(profileData.caste || "");
       setLanguages(profileData.languages || "");
       setMaritalStatus(profileData.maritalStatus ?? null);
-      console.log("gender1");
-      console.log(gender);
+      setImageUri(profileData.profileImage || null);
     } else {
       console.log("No user logged in");
     }
   };
 
+  const currentYear = new Date().getFullYear();
+
+  const calculateCompletion = () => {
+    const totalFields = 11; // Total number of profile fields
+    const filledFields = [
+      name,
+      gender,
+      interestedIn,
+      yob,
+      height,
+      weight,
+      religion,
+      caste,
+      languages,
+      maritalStatus,
+      imageUri,
+    ].filter((field) => field !== null && field !== "").length;
+
+    return Math.round((filledFields / totalFields) * 100);
+  };
+
+  const completionPercentage = calculateCompletion();
+
   return (
     <SafeAreaView className="bg-dark-200 flex-1">
-      <View className="flex-1 items-center">
-        <Image
-          className="w-full h-1/4 border-white"
-          source={require("@/assets/images/default-profile.png")}
-        />
+      <View className="mx-6 mt-4 flex flex-row justify-between items-center">
+        <Text className=" color-white text-3xl font-semibold">Profile</Text>
+        <TouchableOpacity
+          className="bg-indigo-500 px-4 py-2 rounded-xl shadow-lg"
+          onPress={() => router.push("/screens/settings")}
+        >
+          <Ionicons name="settings-outline" size={24} color="white" />
+        </TouchableOpacity>
+      </View>
+
+      <View className="flex-1 ">
+        <View className="flex flex-row m-6 justify-start items-start gap-4">
+          <ProfilePhotoScreen completionPercentage={completionPercentage} />
+          <View className="flex flex-column items-start justify-center gap-2">
+            <View className="flex flex-row items-center">
+              <Text className="color-white text-3xl font-semibold">{name}</Text>
+              {yob && (
+                <Text className="color-white text-3xl font-semibold">
+                  , {yob && currentYear - yob}
+                </Text>
+              )}
+            </View>
+            <TouchableOpacity
+              className="px-4 py-2 rounded-xl shadow-lg"
+              onPress={() => router.push("/screens/editProfile")}
+            >
+              <Text className="color-white text-lg font-semibold rounded-full bg-slate-400 px-2 py-1">
+                Complete profile
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
         <ScrollView
           className="flex flex-column w-full px-6 py-8"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ minHeight: "80%" }}
         >
-          <View className="flex flex-row items-center justify-between">
-            {name ? (
-              <Text className="color-white text-3xl font-semibold">{name}</Text>
-            ) : (
-              <Text className="color-white text-3xl font-semibold">
-                Edit your profile to view more.
-              </Text>
-            )}
-
-            <TouchableOpacity
-              className="bg-indigo-500 px-6 py-3 rounded-lg shadow-lg"
-              onPress={() => router.push("/screens/editProfile")}
-            >
-              <AntDesign name="edit" size={24} color="white" />
-            </TouchableOpacity>
-          </View>
-          {gender!== null && (
+          {gender !== null && (
             <Text className="color-white text-lg font-semibold py-2">
-              Gender: {gender === 0 ? "Male" : gender === 1 ? "Female" : gender === 2 ? "Other" : "Not specified"}
+              Gender:{" "}
+              {gender === 1
+                ? "Male"
+                : gender === 2
+                ? "Female"
+                : gender === 3
+                ? "Other"
+                : "Not specified"}
+            </Text>
+          )}
+          {interestedIn !== null && (
+            <Text className="color-white text-lg font-semibold py-2">
+              Interested in:{" "}
+              {interestedIn === 1
+                ? "Male"
+                : interestedIn === 2
+                ? "Female"
+                : interestedIn === 3
+                ? "Other"
+                : interestedIn === 4
+                ? "Any"
+                : "Not specified"}
             </Text>
           )}
           {mob && dob && yob && (
             <Text className="color-white text-lg font-semibold py-2">
-              Date of Birth: {mob === 1 ? "January" : mob === 2 ? "February" : mob === 3 ? "March" : mob === 4 ? "April" : mob === 5 ? "May" : mob === 6 ? "June" : mob === 7 ? "July" : mob === 8 ? "August" : mob === 9 ? "September" : mob === 10 ? "October" : mob === 11 ? "November"  : mob === 12 ? "December" : "Not specified"} {dob}, {yob} 🎂
+              Date of Birth:{" "}
+              {mob === 1
+                ? "January"
+                : mob === 2
+                ? "February"
+                : mob === 3
+                ? "March"
+                : mob === 4
+                ? "April"
+                : mob === 5
+                ? "May"
+                : mob === 6
+                ? "June"
+                : mob === 7
+                ? "July"
+                : mob === 8
+                ? "August"
+                : mob === 9
+                ? "September"
+                : mob === 10
+                ? "October"
+                : mob === 11
+                ? "November"
+                : mob === 12
+                ? "December"
+                : "Not specified"}{" "}
+              {dob}, {yob} 🎂
             </Text>
           )}
           {height && (
@@ -107,7 +191,30 @@ export default function Profile() {
           )}
           {religion && (
             <Text className="color-white text-lg font-semibold py-2">
-              Religion: {religion === 1 ? "Hinduism" : religion === 2 ? "Jainism" : religion === 3 ? "Buddhism" : religion === 4 ? "Sikhism" : religion === 5 ? "Islam" : religion === 6 ? "Christianity" : religion === 7 ? "Judaism" : religion === 8 ? "Zoroastrianism" : religion === 9 ? "Spiritual" : religion === 10 ? "Others" : religion === 11 ? "Atheism" : "Not specified"}
+              Religion:{" "}
+              {religion === 1
+                ? "Hinduism"
+                : religion === 2
+                ? "Jainism"
+                : religion === 3
+                ? "Buddhism"
+                : religion === 4
+                ? "Sikhism"
+                : religion === 5
+                ? "Islam"
+                : religion === 6
+                ? "Christianity"
+                : religion === 7
+                ? "Judaism"
+                : religion === 8
+                ? "Zoroastrianism"
+                : religion === 9
+                ? "Spiritual"
+                : religion === 10
+                ? "Others"
+                : religion === 11
+                ? "Atheism"
+                : "Not specified"}
             </Text>
           )}
           {caste && (

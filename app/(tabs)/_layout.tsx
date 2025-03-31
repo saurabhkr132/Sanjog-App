@@ -1,3 +1,4 @@
+import React from "react";
 import { View, Text, ImageBackground } from "react-native";
 import { Tabs } from "expo-router";
 import FontAwesome from '@expo/vector-icons/FontAwesome';

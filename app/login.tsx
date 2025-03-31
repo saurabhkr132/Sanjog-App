@@ -5,24 +5,39 @@ import {
   TextInput,
   TouchableOpacity,
   Image,
+  Alert,
 } from "react-native";
-import { auth, } from "../FirebaseConfig";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { useState } from "react";
+import { auth } from "../FirebaseConfig";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import React, { useState } from "react";
 import { router } from "expo-router";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const auth = getAuth();
+  const user = auth.currentUser;
 
   const signIn = async () => {
     try {
       const user = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = user.user;
 
-      if (user) router.replace("/(tabs)");
+      if (userCredential) {
+        if (userCredential.emailVerified) {
+          router.replace("/(tabs)");
+        } else {
+          router.replace("/screens/verifyEmail");
+        }
+      } else {
+        router.replace("/login");
+      }
     } catch (error: any) {
       console.log(error);
-      alert("Check you email!");
+      Alert.alert(
+        "Invalid credentials",
+        "Check your email and password and try again."
+      );
     }
   };
 
@@ -63,6 +78,11 @@ const Login = () => {
           <Text className="text-blue-600 font-bold mt-1 text-lg">Sign Up</Text>
         </TouchableOpacity>
       </View>
+      <TouchableOpacity onPress={() => router.push("/screens/forgotPassword")}>
+        <Text className="text-indigo-400 text-center mt-4">
+          Forgot Password?
+        </Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };

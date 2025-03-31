@@ -1,9 +1,10 @@
 import { Stack } from "expo-router";
 import "./global.css";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { onAuthStateChanged, User } from "@firebase/auth";
 import { auth } from "@/FirebaseConfig";
 import { useRouter } from "expo-router";
+import { Alert } from "react-native";
 
 export default function RootLayout() {
   const [user, setUser] = useState<User | null>(null);
@@ -11,9 +12,18 @@ export default function RootLayout() {
   const router = useRouter();
 
   useEffect(() => {
-    onAuthStateChanged(auth, (user) => {
-      setUser(user);
-    });
+      onAuthStateChanged(auth,(user) => {
+        if (user) {
+          if (user.emailVerified) {
+            router.replace("/(tabs)");
+          } else {
+            // Alert.alert("Message", "Please verify your email before logging in.");
+            router.replace("/screens/verifyEmail");
+          }
+        } else {
+          router.replace("/login");
+        }
+      });
   }, []);
 
   console.log("starting");
