@@ -28,6 +28,7 @@ export default function Profile() {
   const [maritalStatus, setMaritalStatus] = useState<boolean | null>(null);
   const [languages, setLanguages] = useState<string[]>([]);
   const [imageUri, setImageUri] = useState<string | null>("");
+  const [phone, setPhone] = useState<number | null>(null);
   const auth = getAuth();
   const user = auth.currentUser;
 
@@ -55,6 +56,7 @@ export default function Profile() {
       setLanguages(profileData.languages || "");
       setMaritalStatus(profileData.maritalStatus ?? null);
       setImageUri(profileData.profileImage || null);
+      setPhone(profileData.phone || null);
     } else {
       console.log("No user logged in");
     }
@@ -76,6 +78,7 @@ export default function Profile() {
       languages,
       maritalStatus,
       imageUri,
+      phone,
     ].filter((field) => field !== null && field !== "").length;
 
     return Math.round((filledFields / totalFields) * 100);
@@ -187,6 +190,11 @@ export default function Profile() {
           {weight && (
             <Text className="color-white text-lg font-semibold py-2">
               Weight: {weight} kg
+            </Text>
+          )}
+          {phone && (
+            <Text className="color-white text-lg font-semibold py-2">
+              Phone No.: {phone}
             </Text>
           )}
           {religion && (

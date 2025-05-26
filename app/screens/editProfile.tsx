@@ -37,6 +37,7 @@ const EditProfile = () => {
   const [caste, setCaste] = useState("");
   const [maritalStatus, setMaritalStatus] = useState<boolean | null>(null);
   const [languages, setLanguages] = useState<string[]>([]);
+  const [phone, setPhone] = useState<number | null>(null);
 
   const [password, setPassword] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
@@ -113,6 +114,7 @@ const EditProfile = () => {
         caste,
         languages,
         maritalStatus,
+        phone,
       });
       router.push("/profile");
     } catch (error) {
@@ -143,6 +145,7 @@ const EditProfile = () => {
       setReligion(profileData.religion || null);
       setCaste(profileData.caste || "");
       setLanguages(profileData.languages || "");
+      setPhone(profileData.phone || null);
       setMaritalStatus(
         profileData.maritalStatus === true ? true : profileData.maritalStatus === false ? false : null
       );
@@ -372,6 +375,21 @@ const EditProfile = () => {
             }
           />
           <Text className="color-white text-lg font-semibold py-2"> kg</Text>
+        </View>
+        <View className="flex flex-row items-center border-b-2">
+          <Text className="color-white text-lg font-semibold py-2">
+            Phone No.:{" "}
+          </Text>
+          <TextInput
+            className="color-white bg-dark-300 border-2 border-indigo-100 rounded-lg px-6 py-3 my-2 min-w-24"
+            placeholder="phone"
+            placeholderTextColor="gray"
+            keyboardType="numeric"
+            value={phone !== null ? phone.toString() : ""}
+            onChangeText={(text) =>
+              setPhone(text.trim() === "" ? null : parseFloat(text))
+            }
+          />
         </View>
         <View className="flex flex-row items-center border-b-2 mb-2">
           <Text className="color-white text-lg font-semibold">Religion: </Text>

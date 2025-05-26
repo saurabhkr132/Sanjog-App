@@ -1,23 +1,24 @@
-import "dotenv/config";
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 export default {
-  "expo": {
-    "name": "Sanjog",
-    "slug": "sanjog",
-    "description": "Connecting the people",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
-    "scheme": "myapp",
-    "splash": {
-      "image": "./assets/images/logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+  expo: {
+    name: "Sanjog",
+    slug: "sanjog",
+    description: "Connecting the people",
+    version: "1.0.4",
+    orientation: "portrait",
+    icon: "./assets/images/logo.png",
+    scheme: "myapp",
+    splash: {
+      image: "./assets/images/logo.png",
+      resizeMode: "contain",
+      backgroundColor: "#ffffff",
     },
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "sdkVersion": "52.0.0",
-    "extra": {
+    userInterfaceStyle: "automatic",
+    newArchEnabled: true,
+    sdkVersion: "52.0.0",
+    extra: {
       FIREBASE_API_KEY: process.env.FIREBASE_API_KEY,
       FIREBASE_AUTH_DOMAIN: process.env.FIREBASE_AUTH_DOMAIN,
       FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
@@ -30,26 +31,26 @@ export default {
       CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
       CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
       CLOUDINARY_UPLOAD_PRESET: process.env.CLOUDINARY_UPLOAD_PRESET,
-      "eas": {
-        "projectId": "fc5d6abb-60e6-4364-afe2-6b7e84b2597f",
+      eas: {
+        projectId: "fc5d6abb-60e6-4364-afe2-6b7e84b2597f",
       },
     },
-    "android": {
-      "package": "com.sanjog.sanjog",
-      "compileSdkVersion": 35,
-      "targetSdkVersion": 35,
+    android: {
+      package: "com.sanjog.sanjog",
+      compileSdkVersion: 35,
+      targetSdkVersion: 35
     },
-    "plugins": [
+    plugins: [
       [
         "expo-build-properties",
         {
-          "android": {
-            "compileSdkVersion": 35,
-            "targetSdkVersion": 35,
-            "minSdkVersion": 24,
+          android: {
+            compileSdkVersion: 35,
+            targetSdkVersion: 35,
+            minSdkVersion: 24,
           },
         },
       ],
     ],
-  }
+  },
 };

@@ -1,128 +1,149 @@
-import {
-  Text,
-  View,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-  FlatList,
-} from "react-native";
-import React, { useState, useEffect } from "react";
+// app/screens/MatchedUsersScreen.tsx
+import React, { useEffect, useState } from "react";
+import { Text, View, Image, ScrollView, TouchableOpacity } from "react-native";
 import { getAuth } from "firebase/auth";
-import { get, ref } from "firebase/database";
-import { database } from "@/FirebaseConfig";
+import { getDatabase, ref, get } from "firebase/database";
 import { router } from "expo-router";
-import Device from "@/components/Device";
-import { SafeAreaView } from "react-native-safe-area-context";
 
-const Home = () => {
-  const [name, setName] = useState("");
+interface MatchUser {
+  uid: string;
+  name: string;
+  profileImage?: string;
+}
+
+export default function MatchedUsersScreen() {
   const auth = getAuth();
-  const user = auth.currentUser;
+  const db = getDatabase();
+  const currentUser = auth.currentUser;
+
+  const [userName, setUserName] = useState("User");
+  const [macAddress, setMacAddress] = useState<string | null>(null);
+  const [matchedUsers, setMatchedUsers] = useState<MatchUser[] | null>(null);
 
   useEffect(() => {
-    const unsubscribe = getAuth().onAuthStateChanged((user) => {
-      if (user) {
-        if (user.emailVerified) {
-          router.replace("/(tabs)");
-        } else {
-          router.replace("/screens/verifyEmail");
-        }
-      } else {
-        router.replace("/login");
-      }
-    });
+    const fetchData = async () => {
+      if (!currentUser) return;
 
-    return () => unsubscribe();
+      const userRef = ref(db, `users/${currentUser.uid}`);
+      const userSnap = await get(userRef);
+      if (userSnap.exists()) {
+        const data = userSnap.val();
+        if (data.name) setUserName(data.name);
+      }
+
+      const macRef = ref(db, `users/${currentUser.uid}/mac`);
+      const macSnap = await get(macRef);
+      if (macSnap.exists()) {
+        setMacAddress(macSnap.val());
+      }
+
+      const matchRef = ref(db, `users/${currentUser.uid}/match/match`);
+      const matchSnap = await get(matchRef);
+      const matchVal = matchSnap.val();
+
+      let matchedUIDs: string[] = [];
+
+      if (Array.isArray(matchVal)) {
+        matchedUIDs = matchVal.filter(Boolean);
+      } else if (matchVal && typeof matchVal === "object") {
+        matchedUIDs = Object.values(matchVal);
+      }
+
+      const fetchedUsers: MatchUser[] = await Promise.all(
+        matchedUIDs.map(async (uid) => {
+          const uRef = ref(db, `users/${uid}`);
+          const uSnap = await get(uRef);
+          const profileSnap = await get(ref(db, `users/${uid}/profileImage`));
+
+          if (uSnap.exists()) {
+            const uData = uSnap.val();
+            const profileImage = profileSnap.exists()
+              ? profileSnap.val()
+              : undefined;
+
+            return {
+              uid,
+              name: uData.name || "Unknown",
+              profileImage,
+            };
+          }
+
+          return {
+            uid,
+            name: "Unknown",
+          };
+        })
+      );
+
+      setMatchedUsers(fetchedUsers);
+    };
+
+    fetchData();
   }, []);
 
-  useEffect(() => {
-    fetchProfileDetails();
-  }, [user]);
-
-  const fetchProfileDetails = async () => {
-    if (user) {
-      const profileRef = ref(database, `users/${user.uid}`);
-      const snapshot = await get(profileRef);
-
-      const profileData = snapshot.val();
-
-      setName(profileData.name || "");
-    } else {
-      console.log("No user logged in");
-    }
-  };
-
-  const matches = [
-    {
-      id: 1,
-      name: "John Doe",
-      image: require("@/assets/images/default-profile.png"),
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      image: require("@/assets/images/default-profile.png"),
-    },
-    {
-      id: 3,
-      name: "Alice Johnson",
-      image: require("@/assets/images/default-profile.png"),
-    },
-  ];
-
   return (
-    <SafeAreaView className="bg-dark-200 flex-1">
-      <ScrollView
-        className="w-full px-6 py-8"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 20 }}
+    <View className="flex-1 bg-dark-200 px-4 pt-10">
+      <Text className="text-2xl font-bold mb-4 text-white text-center">
+        Welcome, {userName}
+      </Text>
+
+      {macAddress ? (
+        <Text className="text-center text-white mb-2">
+          Device MAC Address: {macAddress}
+        </Text>
+      ) : (
+        <Text className="text-center text-gray-400 mb-2">
+          No MAC address found.
+        </Text>
+      )}
+
+      <Text className="text-center text-gray-400 mb-4">
+        No location information available.
+      </Text>
+
+      <TouchableOpacity
+        className="px-4 py-2 my-4 rounded-xl shadow-lg border-2 border-white w-1/2 align-middle self-center"
+        onPress={() => router.push("/screens/WifiFirebaseQrScreen")}
       >
-        <View className="flex-row justify-between items-center mb-6">
-          <Text className="text-3xl text-white font-bold">
-            {name ? `Hi, ${name}!` : "Welcome!"}
-          </Text>
-        </View>
+        <Text className="text-white text-lg text-center">Generate QR Code</Text>
+      </TouchableOpacity>
 
-        <Text className="text-2xl text-white font-semibold mt-4 mb-4">
-          Your Device
-        </Text>
-        <Device />
+      <Text className="text-xl text-white font-semibold mb-3">
+        Your Matches
+      </Text>
 
-        <Text className="text-2xl text-white font-semibold mt-8 mb-4">
-          Your Matches
-        </Text>
-        <FlatList
-          data={matches}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={({ item }) => (
-            <TouchableOpacity className="bg-gradient-to-r from-pink-500 to-purple-600 p-5 rounded-2xl shadow-lg mx-2">
-              <Image
-                source={item.image}
-                className="w-24 h-24 rounded-full mb-2"
-              />
-              <Text className="text-lg font-medium text-white text-center">
-                {item.name}
-              </Text>
+      {matchedUsers && matchedUsers.length > 0 ? (
+        <ScrollView className="space-y-4">
+          {matchedUsers.map((user) => (
+            <TouchableOpacity
+              key={user.uid}
+              className="bg-dark-100 p-4 rounded-xl flex-row items-center space-x-4"
+              onPress={() => router.push(`/screens/matchDetail/${user.uid}`)}
+            >
+              {user.profileImage ? (
+                <Image
+                  source={{ uri: user.profileImage }}
+                  className="w-16 h-16 mr-2 rounded-full"
+                />
+              ) : (
+                <View className="w-16 h-16 rounded-full bg-gray-700 items-center justify-center">
+                  <Text className="text-white text-xl">👤</Text>
+                </View>
+              )}
+
+              <View>
+                <Text className="text-white font-bold text-lg">
+                  {user.name}
+                </Text>
+              </View>
             </TouchableOpacity>
-          )}
-        />
-        <TouchableOpacity
-          className="px-4 py-2 rounded-xl shadow-lg"
-          onPress={() => router.push("/screens/test")}
-        >
-          <Text className="text-white">Test</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          className="px-4 py-2 rounded-xl shadow-lg"
-          onPress={() => router.push("/screens/bluetooth")}
-        >
-          <Text className="text-white">BT</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+          ))}
+        </ScrollView>
+      ) : (
+        <Text className="text-gray-400 text-center mt-4">
+          No matches found.
+        </Text>
+      )}
+    </View>
   );
-};
-
-export default Home;
+}
